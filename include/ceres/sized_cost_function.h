@@ -43,27 +43,31 @@
 #include "glog/logging.h"
 #include "internal/parameter_dims.h"
 
-namespace ceres {
-
+namespace ceres
+{
 template <int kNumResiduals, int... Ns>
-class SizedCostFunction : public CostFunction {
- public:
-  static_assert(kNumResiduals > 0 || kNumResiduals == DYNAMIC,
-                "Cost functions must have at least one residual block.");
-  static_assert(internal::StaticParameterDims<Ns...>::kIsValid,
-                "Invalid parameter block dimension detected. Each parameter "
-                "block dimension must be bigger than zero.");
+class SizedCostFunction : public CostFunction
+{
+public:
+    static_assert(kNumResiduals > 0 || kNumResiduals == DYNAMIC,
+                  "Cost functions must have at least one residual block.");
+    static_assert(internal::StaticParameterDims<Ns...>::kIsValid,
+                  "Invalid parameter block dimension detected. Each parameter "
+                  "block dimension must be bigger than zero.");
 
-  using ParameterDims = internal::StaticParameterDims<Ns...>;
+    using ParameterDims = internal::StaticParameterDims<Ns...>;
 
-  SizedCostFunction() {
-    set_num_residuals(kNumResiduals);
-    *mutable_parameter_block_sizes() = std::vector<int32_t>{Ns...};
-  }
+    SizedCostFunction()
+    {
+        set_num_residuals(kNumResiduals);
+        *mutable_parameter_block_sizes() = std::vector<int32_t>{Ns...};
+    }
 
-  virtual ~SizedCostFunction() {}
+    virtual ~SizedCostFunction()
+    {
+    }
 
-  // Subclasses must implement Evaluate().
+    // Subclasses must implement Evaluate().
 };
 
 }  // namespace ceres

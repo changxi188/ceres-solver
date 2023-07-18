@@ -173,83 +173,79 @@
 #include "ceres/types.h"
 #include "glog/logging.h"
 
-namespace ceres {
-
-template <typename CostFunctor,
-          NumericDiffMethodType method = CENTRAL,
+namespace ceres
+{
+template <typename CostFunctor, NumericDiffMethodType method = CENTRAL,
           int kNumResiduals = 0,  // Number of residuals, or ceres::DYNAMIC
           int... Ns>              // Parameters dimensions for each block.
-class NumericDiffCostFunction : public SizedCostFunction<kNumResiduals, Ns...> {
- public:
-  NumericDiffCostFunction(
-      CostFunctor* functor,
-      Ownership ownership = TAKE_OWNERSHIP,
-      int num_residuals = kNumResiduals,
-      const NumericDiffOptions& options = NumericDiffOptions())
-      : functor_(functor), ownership_(ownership), options_(options) {
-    if (kNumResiduals == DYNAMIC) {
-      SizedCostFunction<kNumResiduals, Ns...>::set_num_residuals(num_residuals);
-    }
-  }
-
-  explicit NumericDiffCostFunction(NumericDiffCostFunction&& other)
-      : functor_(std::move(other.functor_)), ownership_(other.ownership_) {}
-
-  virtual ~NumericDiffCostFunction() {
-    if (ownership_ != TAKE_OWNERSHIP) {
-      functor_.release();
-    }
-  }
-
-  bool Evaluate(double const* const* parameters,
-                double* residuals,
-                double** jacobians) const override {
-    using internal::FixedArray;
-    using internal::NumericDiff;
-
-    using ParameterDims =
-        typename SizedCostFunction<kNumResiduals, Ns...>::ParameterDims;
-
-    constexpr int kNumParameters = ParameterDims::kNumParameters;
-    constexpr int kNumParameterBlocks = ParameterDims::kNumParameterBlocks;
-
-    // Get the function value (residuals) at the the point to evaluate.
-    if (!internal::VariadicEvaluate<ParameterDims>(
-            *functor_, parameters, residuals)) {
-      return false;
+class NumericDiffCostFunction : public SizedCostFunction<kNumResiduals, Ns...>
+{
+public:
+    NumericDiffCostFunction(CostFunctor* functor, Ownership ownership = TAKE_OWNERSHIP,
+                            int num_residuals = kNumResiduals, const NumericDiffOptions& options = NumericDiffOptions())
+      : functor_(functor), ownership_(ownership), options_(options)
+    {
+        if (kNumResiduals == DYNAMIC)
+        {
+            SizedCostFunction<kNumResiduals, Ns...>::set_num_residuals(num_residuals);
+        }
     }
 
-    if (jacobians == NULL) {
-      return true;
+    explicit NumericDiffCostFunction(NumericDiffCostFunction&& other)
+      : functor_(std::move(other.functor_)), ownership_(other.ownership_)
+    {
     }
 
-    // Create a copy of the parameters which will get mutated.
-    FixedArray<double> parameters_copy(kNumParameters);
-    std::array<double*, kNumParameterBlocks> parameters_reference_copy =
-        ParameterDims::GetUnpackedParameters(parameters_copy.data());
-
-    for (int block = 0; block < kNumParameterBlocks; ++block) {
-      memcpy(parameters_reference_copy[block],
-             parameters[block],
-             sizeof(double) * ParameterDims::GetDim(block));
+    virtual ~NumericDiffCostFunction()
+    {
+        if (ownership_ != TAKE_OWNERSHIP)
+        {
+            functor_.release();
+        }
     }
 
-    internal::EvaluateJacobianForParameterBlocks<ParameterDims>::
-        template Apply<method, kNumResiduals>(
-            functor_.get(),
-            residuals,
-            options_,
-            SizedCostFunction<kNumResiduals, Ns...>::num_residuals(),
-            parameters_reference_copy.data(),
-            jacobians);
+    bool Evaluate(double const* const* parameters, double* residuals, double** jacobians) const override
+    {
+        using internal::FixedArray;
+        using internal::NumericDiff;
 
-    return true;
-  }
+        using ParameterDims = typename SizedCostFunction<kNumResiduals, Ns...>::ParameterDims;
 
- private:
-  std::unique_ptr<CostFunctor> functor_;
-  Ownership ownership_;
-  NumericDiffOptions options_;
+        constexpr int kNumParameters      = ParameterDims::kNumParameters;
+        constexpr int kNumParameterBlocks = ParameterDims::kNumParameterBlocks;
+
+        // Get the function value (residuals) at the the point to evaluate.
+        if (!internal::VariadicEvaluate<ParameterDims>(*functor_, parameters, residuals))
+        {
+            return false;
+        }
+
+        if (jacobians == NULL)
+        {
+            return true;
+        }
+
+        // Create a copy of the parameters which will get mutated.
+        FixedArray<double>                       parameters_copy(kNumParameters);
+        std::array<double*, kNumParameterBlocks> parameters_reference_copy =
+            ParameterDims::GetUnpackedParameters(parameters_copy.data());
+
+        for (int block = 0; block < kNumParameterBlocks; ++block)
+        {
+            memcpy(parameters_reference_copy[block], parameters[block], sizeof(double) * ParameterDims::GetDim(block));
+        }
+
+        internal::EvaluateJacobianForParameterBlocks<ParameterDims>::template Apply<method, kNumResiduals>(
+            functor_.get(), residuals, options_, SizedCostFunction<kNumResiduals, Ns...>::num_residuals(),
+            parameters_reference_copy.data(), jacobians);
+
+        return true;
+    }
+
+private:
+    std::unique_ptr<CostFunctor> functor_;
+    Ownership                    ownership_;
+    NumericDiffOptions           options_;
 };
 
 }  // namespace ceres

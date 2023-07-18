@@ -44,12 +44,12 @@
 #include "ceres/stringprintf.h"
 #include "ceres/types.h"
 
-namespace ceres {
-
+namespace ceres
+{
 class LossFunction;
 
-namespace internal {
-
+namespace internal
+{
 class ParameterBlock;
 
 // A term in the least squares problem. The mathematical form of each term in
@@ -65,83 +65,96 @@ class ParameterBlock;
 //
 // The residual block stores pointers to but does not own the cost functions,
 // loss functions, and parameter blocks.
-class CERES_EXPORT_INTERNAL ResidualBlock {
- public:
-  // Construct the residual block with the given cost/loss functions. Loss may
-  // be null. The index is the index of the residual block in the Program's
-  // residual_blocks array.
-  ResidualBlock(const CostFunction* cost_function,
-                const LossFunction* loss_function,
-                const std::vector<ParameterBlock*>& parameter_blocks,
-                int index);
+class CERES_EXPORT_INTERNAL ResidualBlock
+{
+public:
+    // Construct the residual block with the given cost/loss functions. Loss may
+    // be null. The index is the index of the residual block in the Program's
+    // residual_blocks array.
+    ResidualBlock(const CostFunction* cost_function, const LossFunction* loss_function,
+                  const std::vector<ParameterBlock*>& parameter_blocks, int index);
 
-  // Evaluates the residual term, storing the scalar cost in *cost, the residual
-  // components in *residuals, and the jacobians between the parameters and
-  // residuals in jacobians[i], in row-major order. If residuals is NULL, the
-  // residuals are not computed. If jacobians is NULL, no jacobians are
-  // computed. If jacobians[i] is NULL, then the jacobian for that parameter is
-  // not computed.
-  //
-  // cost must not be null.
-  //
-  // Evaluate needs scratch space which must be supplied by the caller via
-  // scratch. The array should have at least NumScratchDoublesForEvaluate()
-  // space available.
-  //
-  // The return value indicates the success or failure. If the function returns
-  // false, the caller should expect the output memory locations to have
-  // been modified.
-  //
-  // The returned cost and jacobians have had robustification and local
-  // parameterizations applied already; for example, the jacobian for a
-  // 4-dimensional quaternion parameter using the "QuaternionParameterization"
-  // is num_residuals by 3 instead of num_residuals by 4.
-  //
-  // apply_loss_function as the name implies allows the user to switch
-  // the application of the loss function on and off.
-  bool Evaluate(bool apply_loss_function,
-                double* cost,
-                double* residuals,
-                double** jacobians,
-                double* scratch) const;
+    // Evaluates the residual term, storing the scalar cost in *cost, the residual
+    // components in *residuals, and the jacobians between the parameters and
+    // residuals in jacobians[i], in row-major order. If residuals is NULL, the
+    // residuals are not computed. If jacobians is NULL, no jacobians are
+    // computed. If jacobians[i] is NULL, then the jacobian for that parameter is
+    // not computed.
+    //
+    // cost must not be null.
+    //
+    // Evaluate needs scratch space which must be supplied by the caller via
+    // scratch. The array should have at least NumScratchDoublesForEvaluate()
+    // space available.
+    //
+    // The return value indicates the success or failure. If the function returns
+    // false, the caller should expect the output memory locations to have
+    // been modified.
+    //
+    // The returned cost and jacobians have had robustification and local
+    // parameterizations applied already; for example, the jacobian for a
+    // 4-dimensional quaternion parameter using the "QuaternionParameterization"
+    // is num_residuals by 3 instead of num_residuals by 4.
+    //
+    // apply_loss_function as the name implies allows the user to switch
+    // the application of the loss function on and off.
+    bool Evaluate(bool apply_loss_function, double* cost, double* residuals, double** jacobians, double* scratch) const;
 
-  const CostFunction* cost_function() const { return cost_function_; }
-  const LossFunction* loss_function() const { return loss_function_; }
+    const CostFunction* cost_function() const
+    {
+        return cost_function_;
+    }
+    const LossFunction* loss_function() const
+    {
+        return loss_function_;
+    }
 
-  // Access the parameter blocks for this residual. The array has size
-  // NumParameterBlocks().
-  ParameterBlock* const* parameter_blocks() const {
-    return parameter_blocks_.get();
-  }
+    // Access the parameter blocks for this residual. The array has size
+    // NumParameterBlocks().
+    ParameterBlock* const* parameter_blocks() const
+    {
+        return parameter_blocks_.get();
+    }
 
-  // Number of variable blocks that this residual term depends on.
-  int NumParameterBlocks() const {
-    return cost_function_->parameter_block_sizes().size();
-  }
+    // Number of variable blocks that this residual term depends on.
+    int NumParameterBlocks() const
+    {
+        return cost_function_->parameter_block_sizes().size();
+    }
 
-  // The size of the residual vector returned by this residual function.
-  int NumResiduals() const { return cost_function_->num_residuals(); }
+    // The size of the residual vector returned by this residual function.
+    int NumResiduals() const
+    {
+        return cost_function_->num_residuals();
+    }
 
-  // The minimum amount of scratch space needed to pass to Evaluate().
-  int NumScratchDoublesForEvaluate() const;
+    // The minimum amount of scratch space needed to pass to Evaluate().
+    int NumScratchDoublesForEvaluate() const;
 
-  // This residual block's index in an array.
-  int index() const { return index_; }
-  void set_index(int index) { index_ = index; }
+    // This residual block's index in an array.
+    int index() const
+    {
+        return index_;
+    }
+    void set_index(int index)
+    {
+        index_ = index;
+    }
 
-  std::string ToString() const {
-    return StringPrintf("{residual block; index=%d}", index_);
-  }
+    std::string ToString() const
+    {
+        return StringPrintf("{residual block; index=%d}", index_);
+    }
 
- private:
-  const CostFunction* cost_function_;
-  const LossFunction* loss_function_;
-  std::unique_ptr<ParameterBlock*[]> parameter_blocks_;
+private:
+    const CostFunction*                 cost_function_;
+    const LossFunction*                 loss_function_;
+    std::unique_ptr<ParameterBlock* []> parameter_blocks_;
 
-  // The index of the residual, typically in a Program. This is only to permit
-  // switching from a ResidualBlock* to an index in the Program's array, needed
-  // to do efficient removals.
-  int32_t index_;
+    // The index of the residual, typically in a Program. This is only to permit
+    // switching from a ResidualBlock* to an index in the Program's array, needed
+    // to do efficient removals.
+    int32_t index_;
 };
 
 }  // namespace internal

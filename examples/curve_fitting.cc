@@ -31,11 +31,13 @@
 #include "ceres/ceres.h"
 #include "glog/logging.h"
 
+/*
 using ceres::AutoDiffCostFunction;
 using ceres::CostFunction;
 using ceres::Problem;
 using ceres::Solve;
 using ceres::Solver;
+*/
 
 // Data generated using the following octave code.
 //   randn('seed', 23497);
@@ -145,22 +147,26 @@ int main(int argc, char** argv)
     double m = 0.0;
     double c = 0.0;
 
-    Problem problem;
+    ceres::Problem problem;
     for (int i = 0; i < kNumObservations; ++i)
     {
-        problem.AddResidualBlock(new AutoDiffCostFunction<ExponentialResidual, 1, 1, 1>(
-                                     new ExponentialResidual(data[2 * i], data[2 * i + 1])),
-                                 NULL, &m, &c);
+        // Set up the only cost function (also known as residual). This uses
+        // auto-differentiation to obtain the derivative (jacobian).
+        ExponentialResidual* cost_functor = new ExponentialResidual(data[2 * i], data[2 * i + 1]);
+
+        ceres::CostFunction* cost_function =
+            new ceres::AutoDiffCostFunction<ExponentialResidual, 1, 1, 1>(cost_functor);
+        problem.AddResidualBlock(cost_function, NULL, &m, &c);
     }
 
-    Solver::Options options;
+    ceres::Solver::Options options;
     options.max_num_iterations           = 25;
     options.linear_solver_type           = ceres::DENSE_QR;
     options.minimizer_progress_to_stdout = true;
 
-    Solver::Summary summary;
+    ceres::Solver::Summary summary;
     Solve(options, &problem, &summary);
-    std::cout << summary.BriefReport() << "\n";
+    std::cout << summary.FullReport() << "\n";
     std::cout << "Initial m: " << 0.0 << " c: " << 0.0 << "\n";
     std::cout << "Final   m: " << m << " c: " << c << "\n";
     return 0;

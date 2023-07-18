@@ -47,76 +47,76 @@
 
 using Eigen::Dynamic;
 
-namespace ceres {
-namespace internal {
-
-ResidualBlock::ResidualBlock(
-    const CostFunction* cost_function,
-    const LossFunction* loss_function,
-    const std::vector<ParameterBlock*>& parameter_blocks,
-    int index)
-    : cost_function_(cost_function),
-      loss_function_(loss_function),
-      parameter_blocks_(
-          new ParameterBlock*[cost_function->parameter_block_sizes().size()]),
-      index_(index) {
-  CHECK(cost_function_ != nullptr);
-  std::copy(parameter_blocks.begin(),
-            parameter_blocks.end(),
-            parameter_blocks_.get());
+namespace ceres
+{
+namespace internal
+{
+ResidualBlock::ResidualBlock(const CostFunction* cost_function, const LossFunction* loss_function,
+                             const std::vector<ParameterBlock*>& parameter_blocks, int index)
+  : cost_function_(cost_function)
+  , loss_function_(loss_function)
+  , parameter_blocks_(new ParameterBlock*[cost_function->parameter_block_sizes().size()])
+  , index_(index)
+{
+    CHECK(cost_function_ != nullptr);
+    std::copy(parameter_blocks.begin(), parameter_blocks.end(), parameter_blocks_.get());
 }
 
-bool ResidualBlock::Evaluate(const bool apply_loss_function,
-                             double* cost,
-                             double* residuals,
-                             double** jacobians,
-                             double* scratch) const {
-  const int num_parameter_blocks = NumParameterBlocks();
-  const int num_residuals = cost_function_->num_residuals();
+bool ResidualBlock::Evaluate(const bool apply_loss_function, double* cost, double* residuals, double** jacobians,
+                             double* scratch) const
+{
+    const int num_parameter_blocks = NumParameterBlocks();
+    const int num_residuals        = cost_function_->num_residuals();
 
-  // Collect the parameters from their blocks. This will rarely allocate, since
-  // residuals taking more than 8 parameter block arguments are rare.
-  FixedArray<const double*, 8> parameters(num_parameter_blocks);
-  for (int i = 0; i < num_parameter_blocks; ++i) {
-    parameters[i] = parameter_blocks_[i]->state();
-  }
-
-  // Put pointers into the scratch space into global_jacobians as appropriate.
-  FixedArray<double*, 8> global_jacobians(num_parameter_blocks);
-  if (jacobians != nullptr) {
-    for (int i = 0; i < num_parameter_blocks; ++i) {
-      const ParameterBlock* parameter_block = parameter_blocks_[i];
-      if (jacobians[i] != nullptr &&
-          parameter_block->LocalParameterizationJacobian() != nullptr) {
-        global_jacobians[i] = scratch;
-        scratch += num_residuals * parameter_block->Size();
-      } else {
-        global_jacobians[i] = jacobians[i];
-      }
+    // Collect the parameters from their blocks. This will rarely allocate, since
+    // residuals taking more than 8 parameter block arguments are rare.
+    FixedArray<const double*, 8> parameters(num_parameter_blocks);
+    for (int i = 0; i < num_parameter_blocks; ++i)
+    {
+        parameters[i] = parameter_blocks_[i]->state();
     }
-  }
 
-  // If the caller didn't request residuals, use the scratch space for them.
-  bool outputting_residuals = (residuals != nullptr);
-  if (!outputting_residuals) {
-    residuals = scratch;
-  }
+    // Put pointers into the scratch space into global_jacobians as appropriate.
+    FixedArray<double*, 8> global_jacobians(num_parameter_blocks);
+    if (jacobians != nullptr)
+    {
+        for (int i = 0; i < num_parameter_blocks; ++i)
+        {
+            const ParameterBlock* parameter_block = parameter_blocks_[i];
+            if (jacobians[i] != nullptr && parameter_block->LocalParameterizationJacobian() != nullptr)
+            {
+                global_jacobians[i] = scratch;
+                scratch += num_residuals * parameter_block->Size();
+            }
+            else
+            {
+                global_jacobians[i] = jacobians[i];
+            }
+        }
+    }
 
-  // Invalidate the evaluation buffers so that we can check them after
-  // the CostFunction::Evaluate call, to see if all the return values
-  // that were required were written to and that they are finite.
-  double** eval_jacobians =
-      (jacobians != nullptr) ? global_jacobians.data() : nullptr;
+    // If the caller didn't request residuals, use the scratch space for them.
+    bool outputting_residuals = (residuals != nullptr);
+    if (!outputting_residuals)
+    {
+        residuals = scratch;
+    }
 
-  InvalidateEvaluation(*this, cost, residuals, eval_jacobians);
+    // Invalidate the evaluation buffers so that we can check them after
+    // the CostFunction::Evaluate call, to see if all the return values
+    // that were required were written to and that they are finite.
+    double** eval_jacobians = (jacobians != nullptr) ? global_jacobians.data() : nullptr;
 
-  if (!cost_function_->Evaluate(parameters.data(), residuals, eval_jacobians)) {
-    return false;
-  }
+    InvalidateEvaluation(*this, cost, residuals, eval_jacobians);
 
-  if (!IsEvaluationValid(
-          *this, parameters.data(), cost, residuals, eval_jacobians)) {
-    // clang-format off
+    if (!cost_function_->Evaluate(parameters.data(), residuals, eval_jacobians))
+    {
+        return false;
+    }
+
+    if (!IsEvaluationValid(*this, parameters.data(), cost, residuals, eval_jacobians))
+    {
+        // clang-format off
     std::string message =
         "\n\n"
         "Error in evaluating the ResidualBlock.\n\n"
@@ -125,95 +125,97 @@ bool ResidualBlock::Evaluate(const bool apply_loss_function,
         "generated during the or jacobian computation. \n\n" +
         EvaluationToString(
             *this, parameters.data(), cost, residuals, eval_jacobians);
-    // clang-format on
-    LOG(WARNING) << message;
-    return false;
-  }
+        // clang-format on
+        LOG(WARNING) << message;
+        return false;
+    }
 
-  double squared_norm = VectorRef(residuals, num_residuals).squaredNorm();
+    double squared_norm = VectorRef(residuals, num_residuals).squaredNorm();
 
-  // Update the jacobians with the local parameterizations.
-  if (jacobians != nullptr) {
-    for (int i = 0; i < num_parameter_blocks; ++i) {
-      if (jacobians[i] != nullptr) {
-        const ParameterBlock* parameter_block = parameter_blocks_[i];
+    // Update the jacobians with the local parameterizations.
+    if (jacobians != nullptr)
+    {
+        for (int i = 0; i < num_parameter_blocks; ++i)
+        {
+            if (jacobians[i] != nullptr)
+            {
+                const ParameterBlock* parameter_block = parameter_blocks_[i];
 
-        // Apply local reparameterization to the jacobians.
-        if (parameter_block->LocalParameterizationJacobian() != nullptr) {
-          // jacobians[i] = global_jacobians[i] * global_to_local_jacobian.
-          MatrixMatrixMultiply<Dynamic, Dynamic, Dynamic, Dynamic, 0>(
-              global_jacobians[i],
-              num_residuals,
-              parameter_block->Size(),
-              parameter_block->LocalParameterizationJacobian(),
-              parameter_block->Size(),
-              parameter_block->LocalSize(),
-              jacobians[i],
-              0,
-              0,
-              num_residuals,
-              parameter_block->LocalSize());
+                // Apply local reparameterization to the jacobians.
+                if (parameter_block->LocalParameterizationJacobian() != nullptr)
+                {
+                    // jacobians[i] = global_jacobians[i] * global_to_local_jacobian.
+                    MatrixMatrixMultiply<Dynamic, Dynamic, Dynamic, Dynamic, 0>(
+                        global_jacobians[i], num_residuals, parameter_block->Size(),
+                        parameter_block->LocalParameterizationJacobian(), parameter_block->Size(),
+                        parameter_block->LocalSize(), jacobians[i], 0, 0, num_residuals, parameter_block->LocalSize());
+                }
+            }
         }
-      }
     }
-  }
 
-  if (loss_function_ == nullptr || !apply_loss_function) {
-    *cost = 0.5 * squared_norm;
-    return true;
-  }
-
-  double rho[3];
-  loss_function_->Evaluate(squared_norm, rho);
-  *cost = 0.5 * rho[0];
-
-  // No jacobians and not outputting residuals? All done. Doing an early exit
-  // here avoids constructing the "Corrector" object below in a common case.
-  if (jacobians == nullptr && !outputting_residuals) {
-    return true;
-  }
-
-  // Correct for the effects of the loss function. The jacobians need to be
-  // corrected before the residuals, since they use the uncorrected residuals.
-  Corrector correct(squared_norm, rho);
-  if (jacobians != nullptr) {
-    for (int i = 0; i < num_parameter_blocks; ++i) {
-      if (jacobians[i] != nullptr) {
-        const ParameterBlock* parameter_block = parameter_blocks_[i];
-
-        // Correct the jacobians for the loss function.
-        correct.CorrectJacobian(num_residuals,
-                                parameter_block->LocalSize(),
-                                residuals,
-                                jacobians[i]);
-      }
+    if (loss_function_ == nullptr || !apply_loss_function)
+    {
+        *cost = 0.5 * squared_norm;
+        return true;
     }
-  }
 
-  // Correct the residuals with the loss function.
-  if (outputting_residuals) {
-    correct.CorrectResiduals(num_residuals, residuals);
-  }
-  return true;
+    double rho[3];
+    loss_function_->Evaluate(squared_norm, rho);
+    *cost = 0.5 * rho[0];
+
+    // No jacobians and not outputting residuals? All done. Doing an early exit
+    // here avoids constructing the "Corrector" object below in a common case.
+    if (jacobians == nullptr && !outputting_residuals)
+    {
+        return true;
+    }
+
+    // Correct for the effects of the loss function. The jacobians need to be
+    // corrected before the residuals, since they use the uncorrected residuals.
+    Corrector correct(squared_norm, rho);
+    if (jacobians != nullptr)
+    {
+        for (int i = 0; i < num_parameter_blocks; ++i)
+        {
+            if (jacobians[i] != nullptr)
+            {
+                const ParameterBlock* parameter_block = parameter_blocks_[i];
+
+                // Correct the jacobians for the loss function.
+                correct.CorrectJacobian(num_residuals, parameter_block->LocalSize(), residuals, jacobians[i]);
+            }
+        }
+    }
+
+    // Correct the residuals with the loss function.
+    if (outputting_residuals)
+    {
+        correct.CorrectResiduals(num_residuals, residuals);
+    }
+    return true;
 }
 
-int ResidualBlock::NumScratchDoublesForEvaluate() const {
-  // Compute the amount of scratch space needed to store the full-sized
-  // jacobians. For parameters that have no local parameterization  no storage
-  // is needed and the passed-in jacobian array is used directly. Also include
-  // space to store the residuals, which is needed for cost-only evaluations.
-  // This is slightly pessimistic, since both won't be needed all the time, but
-  // the amount of excess should not cause problems for the caller.
-  int num_parameters = NumParameterBlocks();
-  int scratch_doubles = 1;
-  for (int i = 0; i < num_parameters; ++i) {
-    const ParameterBlock* parameter_block = parameter_blocks_[i];
-    if (parameter_block->LocalParameterizationJacobian() != nullptr) {
-      scratch_doubles += parameter_block->Size();
+int ResidualBlock::NumScratchDoublesForEvaluate() const
+{
+    // Compute the amount of scratch space needed to store the full-sized
+    // jacobians. For parameters that have no local parameterization  no storage
+    // is needed and the passed-in jacobian array is used directly. Also include
+    // space to store the residuals, which is needed for cost-only evaluations.
+    // This is slightly pessimistic, since both won't be needed all the time, but
+    // the amount of excess should not cause problems for the caller.
+    int num_parameters  = NumParameterBlocks();
+    int scratch_doubles = 1;
+    for (int i = 0; i < num_parameters; ++i)
+    {
+        const ParameterBlock* parameter_block = parameter_blocks_[i];
+        if (parameter_block->LocalParameterizationJacobian() != nullptr)
+        {
+            scratch_doubles += parameter_block->Size();
+        }
     }
-  }
-  scratch_doubles *= NumResiduals();
-  return scratch_doubles;
+    scratch_doubles *= NumResiduals();
+    return scratch_doubles;
 }
 
 }  // namespace internal

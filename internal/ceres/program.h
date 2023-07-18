@@ -39,9 +39,10 @@
 #include "ceres/evaluation_callback.h"
 #include "ceres/internal/port.h"
 
-namespace ceres {
-namespace internal {
-
+namespace ceres
+{
+namespace internal
+{
 class ParameterBlock;
 class ProblemImpl;
 class ResidualBlock;
@@ -57,140 +58,134 @@ class TripletSparseMatrix;
 // another; for example, the first stage of solving involves stripping all
 // constant parameters and residuals. This is in contrast with Problem, which is
 // not built for transformation.
-class CERES_EXPORT_INTERNAL Program {
- public:
-  Program();
-  explicit Program(const Program& program);
+class CERES_EXPORT_INTERNAL Program
+{
+public:
+    Program();
+    explicit Program(const Program& program);
 
-  // The ordered parameter and residual blocks for the program.
-  const std::vector<ParameterBlock*>& parameter_blocks() const;
-  const std::vector<ResidualBlock*>& residual_blocks() const;
-  std::vector<ParameterBlock*>* mutable_parameter_blocks();
-  std::vector<ResidualBlock*>* mutable_residual_blocks();
-  EvaluationCallback* mutable_evaluation_callback();
+    // The ordered parameter and residual blocks for the program.
+    const std::vector<ParameterBlock*>& parameter_blocks() const;
+    const std::vector<ResidualBlock*>&  residual_blocks() const;
+    std::vector<ParameterBlock*>*       mutable_parameter_blocks();
+    std::vector<ResidualBlock*>*        mutable_residual_blocks();
+    EvaluationCallback*                 mutable_evaluation_callback();
 
-  // Serialize to/from the program and update states.
-  //
-  // NOTE: Setting the state of a parameter block can trigger the
-  // computation of the Jacobian of its local parameterization. If
-  // this computation fails for some reason, then this method returns
-  // false and the state of the parameter blocks cannot be trusted.
-  bool StateVectorToParameterBlocks(const double* state);
-  void ParameterBlocksToStateVector(double* state) const;
+    // Serialize to/from the program and update states.
+    //
+    // NOTE: Setting the state of a parameter block can trigger the
+    // computation of the Jacobian of its local parameterization. If
+    // this computation fails for some reason, then this method returns
+    // false and the state of the parameter blocks cannot be trusted.
+    bool StateVectorToParameterBlocks(const double* state);
+    void ParameterBlocksToStateVector(double* state) const;
 
-  // Copy internal state to the user's parameters.
-  void CopyParameterBlockStateToUserState();
+    // Copy internal state to the user's parameters.
+    void CopyParameterBlockStateToUserState();
 
-  // Set the parameter block pointers to the user pointers. Since this
-  // runs parameter block set state internally, which may call local
-  // parameterizations, this can fail. False is returned on failure.
-  bool SetParameterBlockStatePtrsToUserStatePtrs();
+    // Set the parameter block pointers to the user pointers. Since this
+    // runs parameter block set state internally, which may call local
+    // parameterizations, this can fail. False is returned on failure.
+    bool SetParameterBlockStatePtrsToUserStatePtrs();
 
-  // Update a state vector for the program given a delta.
-  bool Plus(const double* state,
-            const double* delta,
-            double* state_plus_delta) const;
+    // Update a state vector for the program given a delta.
+    bool Plus(const double* state, const double* delta, double* state_plus_delta) const;
 
-  // Set the parameter indices and offsets. This permits mapping backward
-  // from a ParameterBlock* to an index in the parameter_blocks() vector. For
-  // any parameter block p, after calling SetParameterOffsetsAndIndex(), it
-  // is true that
-  //
-  //   parameter_blocks()[p->index()] == p
-  //
-  // If a parameter appears in a residual but not in the parameter block, then
-  // it will have an index of -1.
-  //
-  // This also updates p->state_offset() and p->delta_offset(), which are the
-  // position of the parameter in the state and delta vector respectively.
-  void SetParameterOffsetsAndIndex();
+    // Set the parameter indices and offsets. This permits mapping backward
+    // from a ParameterBlock* to an index in the parameter_blocks() vector. For
+    // any parameter block p, after calling SetParameterOffsetsAndIndex(), it
+    // is true that
+    //
+    //   parameter_blocks()[p->index()] == p
+    //
+    // If a parameter appears in a residual but not in the parameter block, then
+    // it will have an index of -1.
+    //
+    // This also updates p->state_offset() and p->delta_offset(), which are the
+    // position of the parameter in the state and delta vector respectively.
+    void SetParameterOffsetsAndIndex();
 
-  // Check if the internal state of the program (the indexing and the
-  // offsets) are correct.
-  bool IsValid() const;
+    // Check if the internal state of the program (the indexing and the
+    // offsets) are correct.
+    bool IsValid() const;
 
-  bool ParameterBlocksAreFinite(std::string* message) const;
+    bool ParameterBlocksAreFinite(std::string* message) const;
 
-  // Returns true if the program has any non-constant parameter blocks
-  // which have non-trivial bounds constraints.
-  bool IsBoundsConstrained() const;
+    // Returns true if the program has any non-constant parameter blocks
+    // which have non-trivial bounds constraints.
+    bool IsBoundsConstrained() const;
 
-  // Returns false, if the program has any constant parameter blocks
-  // which are not feasible, or any variable parameter blocks which
-  // have a lower bound greater than or equal to the upper bound.
-  bool IsFeasible(std::string* message) const;
+    // Returns false, if the program has any constant parameter blocks
+    // which are not feasible, or any variable parameter blocks which
+    // have a lower bound greater than or equal to the upper bound.
+    bool IsFeasible(std::string* message) const;
 
-  // Loop over each residual block and ensure that no two parameter
-  // blocks in the same residual block are part of
-  // parameter_blocks as that would violate the assumption that it
-  // is an independent set in the Hessian matrix.
-  bool IsParameterBlockSetIndependent(
-      const std::set<double*>& independent_set) const;
+    // Loop over each residual block and ensure that no two parameter
+    // blocks in the same residual block are part of
+    // parameter_blocks as that would violate the assumption that it
+    // is an independent set in the Hessian matrix.
+    bool IsParameterBlockSetIndependent(const std::set<double*>& independent_set) const;
 
-  // Create a TripletSparseMatrix which contains the zero-one
-  // structure corresponding to the block sparsity of the transpose of
-  // the Jacobian matrix.
-  //
-  // start_residual_block which allows the user to ignore the first
-  // start_residual_block residuals.
-  std::unique_ptr<TripletSparseMatrix> CreateJacobianBlockSparsityTranspose(
-      int start_residual_block = 0) const;
+    // Create a TripletSparseMatrix which contains the zero-one
+    // structure corresponding to the block sparsity of the transpose of
+    // the Jacobian matrix.
+    //
+    // start_residual_block which allows the user to ignore the first
+    // start_residual_block residuals.
+    std::unique_ptr<TripletSparseMatrix> CreateJacobianBlockSparsityTranspose(int start_residual_block = 0) const;
 
-  // Create a copy of this program and removes constant parameter
-  // blocks and residual blocks with no varying parameter blocks while
-  // preserving their relative order.
-  //
-  // removed_parameter_blocks on exit will contain the list of
-  // parameter blocks that were removed.
-  //
-  // fixed_cost will be equal to the sum of the costs of the residual
-  // blocks that were removed.
-  //
-  // If there was a problem, then the function will return a NULL
-  // pointer and error will contain a human readable description of
-  // the problem.
-  Program* CreateReducedProgram(std::vector<double*>* removed_parameter_blocks,
-                                double* fixed_cost,
-                                std::string* error) const;
+    // Create a copy of this program and removes constant parameter
+    // blocks and residual blocks with no varying parameter blocks while
+    // preserving their relative order.
+    //
+    // removed_parameter_blocks on exit will contain the list of
+    // parameter blocks that were removed.
+    //
+    // fixed_cost will be equal to the sum of the costs of the residual
+    // blocks that were removed.
+    //
+    // If there was a problem, then the function will return a NULL
+    // pointer and error will contain a human readable description of
+    // the problem.
+    Program* CreateReducedProgram(std::vector<double*>* removed_parameter_blocks, double* fixed_cost,
+                                  std::string* error) const;
 
-  // See problem.h for what these do.
-  int NumParameterBlocks() const;
-  int NumParameters() const;
-  int NumEffectiveParameters() const;
-  int NumResidualBlocks() const;
-  int NumResiduals() const;
+    // See problem.h for what these do.
+    int NumParameterBlocks() const;
+    int NumParameters() const;
+    int NumEffectiveParameters() const;
+    int NumResidualBlocks() const;
+    int NumResiduals() const;
 
-  int MaxScratchDoublesNeededForEvaluate() const;
-  int MaxDerivativesPerResidualBlock() const;
-  int MaxParametersPerResidualBlock() const;
-  int MaxResidualsPerResidualBlock() const;
+    int MaxScratchDoublesNeededForEvaluate() const;
+    int MaxDerivativesPerResidualBlock() const;
+    int MaxParametersPerResidualBlock() const;
+    int MaxResidualsPerResidualBlock() const;
 
-  // A human-readable dump of the parameter blocks for debugging.
-  // TODO(keir): If necessary, also dump the residual blocks.
-  std::string ToString() const;
+    // A human-readable dump of the parameter blocks for debugging.
+    // TODO(keir): If necessary, also dump the residual blocks.
+    std::string ToString() const;
 
- private:
-  // Remove constant parameter blocks and residual blocks with no
-  // varying parameter blocks while preserving their relative order.
-  //
-  // removed_parameter_blocks on exit will contain the list of
-  // parameter blocks that were removed.
-  //
-  // fixed_cost will be equal to the sum of the costs of the residual
-  // blocks that were removed.
-  //
-  // If there was a problem, then the function will return false and
-  // error will contain a human readable description of the problem.
-  bool RemoveFixedBlocks(std::vector<double*>* removed_parameter_blocks,
-                         double* fixed_cost,
-                         std::string* message);
+private:
+    // Remove constant parameter blocks and residual blocks with no
+    // varying parameter blocks while preserving their relative order.
+    //
+    // removed_parameter_blocks on exit will contain the list of
+    // parameter blocks that were removed.
+    //
+    // fixed_cost will be equal to the sum of the costs of the residual
+    // blocks that were removed.
+    //
+    // If there was a problem, then the function will return false and
+    // error will contain a human readable description of the problem.
+    bool RemoveFixedBlocks(std::vector<double*>* removed_parameter_blocks, double* fixed_cost, std::string* message);
 
-  // The Program does not own the ParameterBlock or ResidualBlock objects.
-  std::vector<ParameterBlock*> parameter_blocks_;
-  std::vector<ResidualBlock*> residual_blocks_;
-  EvaluationCallback* evaluation_callback_ = nullptr;
+    // The Program does not own the ParameterBlock or ResidualBlock objects.
+    std::vector<ParameterBlock*> parameter_blocks_;
+    std::vector<ResidualBlock*>  residual_blocks_;
+    EvaluationCallback*          evaluation_callback_ = nullptr;
 
-  friend class ProblemImpl;
+    friend class ProblemImpl;
 };
 
 }  // namespace internal

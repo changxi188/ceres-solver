@@ -50,8 +50,8 @@
 #include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/port.h"
 
-namespace ceres {
-
+namespace ceres
+{
 // This class implements the computation of the cost (a.k.a. residual) terms as
 // a function of the input (control) variables, and is the interface for users
 // to describe their least squares problem to Ceres. In other words, this is the
@@ -61,80 +61,91 @@ namespace ceres {
 // code inheriting from this class is expected to set these two members with the
 // corresponding accessors. This information will be verified by the Problem
 // when added with AddResidualBlock().
-class CERES_EXPORT CostFunction {
- public:
-  CostFunction() : num_residuals_(0) {}
-  CostFunction(const CostFunction&) = delete;
-  void operator=(const CostFunction&) = delete;
+class CERES_EXPORT CostFunction
+{
+public:
+    CostFunction() : num_residuals_(0)
+    {
+    }
+    CostFunction(const CostFunction&) = delete;
+    void operator=(const CostFunction&) = delete;
 
-  virtual ~CostFunction() {}
+    virtual ~CostFunction()
+    {
+    }
 
-  // Inputs:
-  //
-  // parameters is an array of pointers to arrays containing the
-  // various parameter blocks. parameters has the same number of
-  // elements as parameter_block_sizes_.  Parameter blocks are in the
-  // same order as parameter_block_sizes_.i.e.,
-  //
-  //   parameters_[i] = double[parameter_block_sizes_[i]]
-  //
-  // Outputs:
-  //
-  // residuals is an array of size num_residuals_.
-  //
-  // jacobians is an array of size parameter_block_sizes_ containing
-  // pointers to storage for jacobian blocks corresponding to each
-  // parameter block. Jacobian blocks are in the same order as
-  // parameter_block_sizes, i.e. jacobians[i], is an
-  // array that contains num_residuals_* parameter_block_sizes_[i]
-  // elements. Each jacobian block is stored in row-major order, i.e.,
-  //
-  //   jacobians[i][r*parameter_block_size_[i] + c] =
-  //                              d residual[r] / d parameters[i][c]
-  //
-  // If jacobians is NULL, then no derivatives are returned; this is
-  // the case when computing cost only. If jacobians[i] is NULL, then
-  // the jacobian block corresponding to the i'th parameter block must
-  // not to be returned.
-  //
-  // The return value indicates whether the computation of the
-  // residuals and/or jacobians was successful or not.
-  //
-  // This can be used to communicate numerical failures in jacobian
-  // computations for instance.
-  //
-  // A more interesting and common use is to impose constraints on the
-  // parameters. If the initial values of the parameter blocks satisfy
-  // the constraints, then returning false whenever the constraints
-  // are not satisfied will prevent the solver from moving into the
-  // infeasible region. This is not a very sophisticated mechanism for
-  // enforcing constraints, but is often good enough.
-  //
-  // Note that it is important that the initial values of the
-  // parameter block must be feasible, otherwise the solver will
-  // declare a numerical problem at iteration 0.
-  virtual bool Evaluate(double const* const* parameters,
-                        double* residuals,
-                        double** jacobians) const = 0;
+    // Inputs:
+    //
+    // parameters is an array of pointers to arrays containing the
+    // various parameter blocks. parameters has the same number of
+    // elements as parameter_block_sizes_.  Parameter blocks are in the
+    // same order as parameter_block_sizes_.i.e.,
+    //
+    //   parameters_[i] = double[parameter_block_sizes_[i]]
+    //
+    // Outputs:
+    //
+    // residuals is an array of size num_residuals_.
+    //
+    // jacobians is an array of size parameter_block_sizes_ containing
+    // pointers to storage for jacobian blocks corresponding to each
+    // parameter block. Jacobian blocks are in the same order as
+    // parameter_block_sizes, i.e. jacobians[i], is an
+    // array that contains num_residuals_* parameter_block_sizes_[i]
+    // elements. Each jacobian block is stored in row-major order, i.e.,
+    //
+    //   jacobians[i][r*parameter_block_size_[i] + c] =
+    //                              d residual[r] / d parameters[i][c]
+    //
+    // If jacobians is NULL, then no derivatives are returned; this is
+    // the case when computing cost only. If jacobians[i] is NULL, then
+    // the jacobian block corresponding to the i'th parameter block must
+    // not to be returned.
+    //
+    // The return value indicates whether the computation of the
+    // residuals and/or jacobians was successful or not.
+    //
+    // This can be used to communicate numerical failures in jacobian
+    // computations for instance.
+    //
+    // A more interesting and common use is to impose constraints on the
+    // parameters. If the initial values of the parameter blocks satisfy
+    // the constraints, then returning false whenever the constraints
+    // are not satisfied will prevent the solver from moving into the
+    // infeasible region. This is not a very sophisticated mechanism for
+    // enforcing constraints, but is often good enough.
+    //
+    // Note that it is important that the initial values of the
+    // parameter block must be feasible, otherwise the solver will
+    // declare a numerical problem at iteration 0.
+    virtual bool Evaluate(double const* const* parameters, double* residuals, double** jacobians) const = 0;
 
-  const std::vector<int32_t>& parameter_block_sizes() const {
-    return parameter_block_sizes_;
-  }
+    const std::vector<int32_t>& parameter_block_sizes() const
+    {
+        return parameter_block_sizes_;
+    }
 
-  int num_residuals() const { return num_residuals_; }
+    int num_residuals() const
+    {
+        return num_residuals_;
+    }
 
- protected:
-  std::vector<int32_t>* mutable_parameter_block_sizes() {
-    return &parameter_block_sizes_;
-  }
+protected:
+    std::vector<int32_t>* mutable_parameter_block_sizes()
+    {
+        return &parameter_block_sizes_;
+    }
 
-  void set_num_residuals(int num_residuals) { num_residuals_ = num_residuals; }
+    void set_num_residuals(int num_residuals)
+    {
+        num_residuals_ = num_residuals;
+    }
 
- private:
-  // Cost function signature metadata: number of inputs & their sizes,
-  // number of outputs (residuals).
-  std::vector<int32_t> parameter_block_sizes_;
-  int num_residuals_;
+private:
+    // Cost function signature metadata: number of inputs & their sizes,
+    // number of outputs (residuals).
+    std::vector<int32_t> parameter_block_sizes_;
+    int                  num_residuals_;
 };
 
 }  // namespace ceres

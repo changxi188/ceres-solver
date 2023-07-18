@@ -50,164 +50,155 @@
 #include "ceres/problem.h"
 #include "ceres/types.h"
 
-namespace ceres {
-
+namespace ceres
+{
 class CostFunction;
 class EvaluationCallback;
 class LossFunction;
 class LocalParameterization;
 struct CRSMatrix;
 
-namespace internal {
-
+namespace internal
+{
 class Program;
 class ResidualBlock;
 
-class CERES_EXPORT_INTERNAL ProblemImpl {
- public:
-  typedef std::map<double*, ParameterBlock*> ParameterMap;
-  typedef std::unordered_set<ResidualBlock*> ResidualBlockSet;
-  typedef std::map<CostFunction*, int> CostFunctionRefCount;
-  typedef std::map<LossFunction*, int> LossFunctionRefCount;
+class CERES_EXPORT_INTERNAL ProblemImpl
+{
+public:
+    typedef std::map<double*, ParameterBlock*> ParameterMap;
+    typedef std::unordered_set<ResidualBlock*> ResidualBlockSet;
+    typedef std::map<CostFunction*, int>       CostFunctionRefCount;
+    typedef std::map<LossFunction*, int>       LossFunctionRefCount;
 
-  ProblemImpl();
-  explicit ProblemImpl(const Problem::Options& options);
-  ProblemImpl(const ProblemImpl&) = delete;
-  void operator=(const ProblemImpl&) = delete;
+    ProblemImpl();
+    explicit ProblemImpl(const Problem::Options& options);
+    ProblemImpl(const ProblemImpl&) = delete;
+    void operator=(const ProblemImpl&) = delete;
 
-  ~ProblemImpl();
+    ~ProblemImpl();
 
-  // See the public problem.h file for description of these methods.
-  ResidualBlockId AddResidualBlock(CostFunction* cost_function,
-                                   LossFunction* loss_function,
-                                   double* const* const parameter_blocks,
-                                   int num_parameter_blocks);
+    // See the public problem.h file for description of these methods.
+    ResidualBlockId AddResidualBlock(CostFunction* cost_function, LossFunction* loss_function,
+                                     double* const* const parameter_blocks, int num_parameter_blocks);
 
-  template <typename... Ts>
-  ResidualBlockId AddResidualBlock(CostFunction* cost_function,
-                                   LossFunction* loss_function,
-                                   double* x0,
-                                   Ts*... xs) {
-    const std::array<double*, sizeof...(Ts) + 1> parameter_blocks{{x0, xs...}};
-    return AddResidualBlock(cost_function,
-                            loss_function,
-                            parameter_blocks.data(),
-                            static_cast<int>(parameter_blocks.size()));
-  }
+    template <typename... Ts>
+    ResidualBlockId AddResidualBlock(CostFunction* cost_function, LossFunction* loss_function, double* x0, Ts*... xs)
+    {
+        const std::array<double*, sizeof...(Ts) + 1> parameter_blocks{{x0, xs...}};
+        return AddResidualBlock(cost_function, loss_function, parameter_blocks.data(),
+                                static_cast<int>(parameter_blocks.size()));
+    }
 
-  void AddParameterBlock(double* values, int size);
-  void AddParameterBlock(double* values,
-                         int size,
-                         LocalParameterization* local_parameterization);
+    void AddParameterBlock(double* values, int size);
+    void AddParameterBlock(double* values, int size, LocalParameterization* local_parameterization);
 
-  void RemoveResidualBlock(ResidualBlock* residual_block);
-  void RemoveParameterBlock(const double* values);
+    void RemoveResidualBlock(ResidualBlock* residual_block);
+    void RemoveParameterBlock(const double* values);
 
-  void SetParameterBlockConstant(const double* values);
-  void SetParameterBlockVariable(double* values);
-  bool IsParameterBlockConstant(const double* values) const;
+    void SetParameterBlockConstant(const double* values);
+    void SetParameterBlockVariable(double* values);
+    bool IsParameterBlockConstant(const double* values) const;
 
-  void SetParameterization(double* values,
-                           LocalParameterization* local_parameterization);
-  const LocalParameterization* GetParameterization(const double* values) const;
+    void                         SetParameterization(double* values, LocalParameterization* local_parameterization);
+    const LocalParameterization* GetParameterization(const double* values) const;
 
-  void SetParameterLowerBound(double* values, int index, double lower_bound);
-  void SetParameterUpperBound(double* values, int index, double upper_bound);
-  double GetParameterLowerBound(const double* values, int index) const;
-  double GetParameterUpperBound(const double* values, int index) const;
+    void   SetParameterLowerBound(double* values, int index, double lower_bound);
+    void   SetParameterUpperBound(double* values, int index, double upper_bound);
+    double GetParameterLowerBound(const double* values, int index) const;
+    double GetParameterUpperBound(const double* values, int index) const;
 
-  bool Evaluate(const Problem::EvaluateOptions& options,
-                double* cost,
-                std::vector<double>* residuals,
-                std::vector<double>* gradient,
-                CRSMatrix* jacobian);
+    bool Evaluate(const Problem::EvaluateOptions& options, double* cost, std::vector<double>* residuals,
+                  std::vector<double>* gradient, CRSMatrix* jacobian);
 
-  bool EvaluateResidualBlock(ResidualBlock* residual_block,
-                             bool apply_loss_function,
-                             bool new_point,
-                             double* cost,
-                             double* residuals,
-                             double** jacobians) const;
+    bool EvaluateResidualBlock(ResidualBlock* residual_block, bool apply_loss_function, bool new_point, double* cost,
+                               double* residuals, double** jacobians) const;
 
-  int NumParameterBlocks() const;
-  int NumParameters() const;
-  int NumResidualBlocks() const;
-  int NumResiduals() const;
+    int NumParameterBlocks() const;
+    int NumParameters() const;
+    int NumResidualBlocks() const;
+    int NumResiduals() const;
 
-  int ParameterBlockSize(const double* parameter_block) const;
-  int ParameterBlockLocalSize(const double* parameter_block) const;
+    int ParameterBlockSize(const double* parameter_block) const;
+    int ParameterBlockLocalSize(const double* parameter_block) const;
 
-  bool HasParameterBlock(const double* parameter_block) const;
+    bool HasParameterBlock(const double* parameter_block) const;
 
-  void GetParameterBlocks(std::vector<double*>* parameter_blocks) const;
-  void GetResidualBlocks(std::vector<ResidualBlockId>* residual_blocks) const;
+    void GetParameterBlocks(std::vector<double*>* parameter_blocks) const;
+    void GetResidualBlocks(std::vector<ResidualBlockId>* residual_blocks) const;
 
-  void GetParameterBlocksForResidualBlock(
-      const ResidualBlockId residual_block,
-      std::vector<double*>* parameter_blocks) const;
+    void GetParameterBlocksForResidualBlock(const ResidualBlockId residual_block,
+                                            std::vector<double*>* parameter_blocks) const;
 
-  const CostFunction* GetCostFunctionForResidualBlock(
-      const ResidualBlockId residual_block) const;
-  const LossFunction* GetLossFunctionForResidualBlock(
-      const ResidualBlockId residual_block) const;
+    const CostFunction* GetCostFunctionForResidualBlock(const ResidualBlockId residual_block) const;
+    const LossFunction* GetLossFunctionForResidualBlock(const ResidualBlockId residual_block) const;
 
-  void GetResidualBlocksForParameterBlock(
-      const double* values,
-      std::vector<ResidualBlockId>* residual_blocks) const;
+    void GetResidualBlocksForParameterBlock(const double* values, std::vector<ResidualBlockId>* residual_blocks) const;
 
-  const Program& program() const { return *program_; }
-  Program* mutable_program() { return program_.get(); }
+    const Program& program() const
+    {
+        return *program_;
+    }
+    Program* mutable_program()
+    {
+        return program_.get();
+    }
 
-  const ParameterMap& parameter_map() const { return parameter_block_map_; }
-  const ResidualBlockSet& residual_block_set() const {
-    CHECK(options_.enable_fast_removal)
-        << "Fast removal not enabled, residual_block_set is not maintained.";
-    return residual_block_set_;
-  }
+    const ParameterMap& parameter_map() const
+    {
+        return parameter_block_map_;
+    }
+    const ResidualBlockSet& residual_block_set() const
+    {
+        CHECK(options_.enable_fast_removal) << "Fast removal not enabled, residual_block_set is not maintained.";
+        return residual_block_set_;
+    }
 
-  ContextImpl* context() { return context_impl_; }
+    ContextImpl* context()
+    {
+        return context_impl_;
+    }
 
- private:
-  ParameterBlock* InternalAddParameterBlock(double* values, int size);
-  void InternalRemoveResidualBlock(ResidualBlock* residual_block);
+private:
+    ParameterBlock* InternalAddParameterBlock(double* values, int size);
+    void            InternalRemoveResidualBlock(ResidualBlock* residual_block);
 
-  // Delete the arguments in question. These differ from the Remove* functions
-  // in that they do not clean up references to the block to delete; they
-  // merely delete them.
-  template <typename Block>
-  void DeleteBlockInVector(std::vector<Block*>* mutable_blocks,
-                           Block* block_to_remove);
-  void DeleteBlock(ResidualBlock* residual_block);
-  void DeleteBlock(ParameterBlock* parameter_block);
+    // Delete the arguments in question. These differ from the Remove* functions
+    // in that they do not clean up references to the block to delete; they
+    // merely delete them.
+    template <typename Block>
+    void DeleteBlockInVector(std::vector<Block*>* mutable_blocks, Block* block_to_remove);
+    void DeleteBlock(ResidualBlock* residual_block);
+    void DeleteBlock(ParameterBlock* parameter_block);
 
-  const Problem::Options options_;
+    const Problem::Options options_;
 
-  bool context_impl_owned_;
-  ContextImpl* context_impl_;
+    bool         context_impl_owned_;
+    ContextImpl* context_impl_;
 
-  // The mapping from user pointers to parameter blocks.
-  ParameterMap parameter_block_map_;
+    // The mapping from user pointers to parameter blocks.
+    ParameterMap parameter_block_map_;
 
-  // Iff enable_fast_removal is enabled, contains the current residual blocks.
-  ResidualBlockSet residual_block_set_;
+    // Iff enable_fast_removal is enabled, contains the current residual blocks.
+    ResidualBlockSet residual_block_set_;
 
-  // The actual parameter and residual blocks.
-  std::unique_ptr<internal::Program> program_;
+    // The actual parameter and residual blocks.
+    std::unique_ptr<internal::Program> program_;
 
-  // When removing parameter blocks, parameterizations have ambiguous
-  // ownership. Instead of scanning the entire problem to see if the
-  // parameterization is shared with other parameter blocks, buffer
-  // them until destruction.
-  //
-  // TODO(keir): See if it makes sense to use sets instead.
-  std::vector<LocalParameterization*> local_parameterizations_to_delete_;
+    // When removing parameter blocks, parameterizations have ambiguous
+    // ownership. Instead of scanning the entire problem to see if the
+    // parameterization is shared with other parameter blocks, buffer
+    // them until destruction.
+    //
+    // TODO(keir): See if it makes sense to use sets instead.
+    std::vector<LocalParameterization*> local_parameterizations_to_delete_;
 
-  // For each cost function and loss function in the problem, a count
-  // of the number of residual blocks that refer to them. When the
-  // count goes to zero and the problem owns these objects, they are
-  // destroyed.
-  CostFunctionRefCount cost_function_ref_count_;
-  LossFunctionRefCount loss_function_ref_count_;
+    // For each cost function and loss function in the problem, a count
+    // of the number of residual blocks that refer to them. When the
+    // count goes to zero and the problem owns these objects, they are
+    // destroyed.
+    CostFunctionRefCount cost_function_ref_count_;
+    LossFunctionRefCount loss_function_ref_count_;
 };
 
 }  // namespace internal
