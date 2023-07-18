@@ -39,7 +39,8 @@
 #include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/port.h"
 
-namespace ceres {
+namespace ceres
+{
 
 // Purpose: Sometimes parameter blocks x can overparameterize a problem
 //
@@ -111,103 +112,114 @@ namespace ceres {
 //
 // The class LocalParameterization defines the function Plus and its
 // Jacobian which is needed to compute the Jacobian of f w.r.t delta.
-class CERES_EXPORT LocalParameterization {
- public:
-  virtual ~LocalParameterization();
+class CERES_EXPORT LocalParameterization
+{
+public:
+    virtual ~LocalParameterization();
 
-  // Generalization of the addition operation,
-  //
-  //   x_plus_delta = Plus(x, delta)
-  //
-  // with the condition that Plus(x, 0) = x.
-  virtual bool Plus(const double* x,
-                    const double* delta,
-                    double* x_plus_delta) const = 0;
+    // Generalization of the addition operation,
+    //
+    //   x_plus_delta = Plus(x, delta)
+    //
+    // with the condition that Plus(x, 0) = x.
+    virtual bool Plus(const double* x, const double* delta, double* x_plus_delta) const = 0;
 
-  // The jacobian of Plus(x, delta) w.r.t delta at delta = 0.
-  //
-  // jacobian is a row-major GlobalSize() x LocalSize() matrix.
-  virtual bool ComputeJacobian(const double* x, double* jacobian) const = 0;
+    // The jacobian of Plus(x, delta) w.r.t delta at delta = 0.
+    //
+    // jacobian is a row-major GlobalSize() x LocalSize() matrix.
+    virtual bool ComputeJacobian(const double* x, double* jacobian) const = 0;
 
-  // local_matrix = global_matrix * jacobian
-  //
-  // global_matrix is a num_rows x GlobalSize  row major matrix.
-  // local_matrix is a num_rows x LocalSize row major matrix.
-  // jacobian(x) is the matrix returned by ComputeJacobian at x.
-  //
-  // This is only used by GradientProblem. For most normal uses, it is
-  // okay to use the default implementation.
-  virtual bool MultiplyByJacobian(const double* x,
-                                  const int num_rows,
-                                  const double* global_matrix,
-                                  double* local_matrix) const;
+    // local_matrix = global_matrix * jacobian
+    //
+    // global_matrix is a num_rows x GlobalSize  row major matrix.
+    // local_matrix is a num_rows x LocalSize row major matrix.
+    // jacobian(x) is the matrix returned by ComputeJacobian at x.
+    //
+    // This is only used by GradientProblem. For most normal uses, it is
+    // okay to use the default implementation.
+    virtual bool MultiplyByJacobian(const double* x, const int num_rows, const double* global_matrix,
+                                    double* local_matrix) const;
 
-  // Size of x.
-  virtual int GlobalSize() const = 0;
+    // Size of x.
+    virtual int GlobalSize() const = 0;
 
-  // Size of delta.
-  virtual int LocalSize() const = 0;
+    // Size of delta.
+    virtual int LocalSize() const = 0;
 };
 
 // Some basic parameterizations
 
 // Identity Parameterization: Plus(x, delta) = x + delta
-class CERES_EXPORT IdentityParameterization : public LocalParameterization {
- public:
-  explicit IdentityParameterization(int size);
-  virtual ~IdentityParameterization() {}
-  bool Plus(const double* x,
-            const double* delta,
-            double* x_plus_delta) const override;
-  bool ComputeJacobian(const double* x, double* jacobian) const override;
-  bool MultiplyByJacobian(const double* x,
-                          const int num_cols,
-                          const double* global_matrix,
-                          double* local_matrix) const override;
-  int GlobalSize() const override { return size_; }
-  int LocalSize() const override { return size_; }
+class CERES_EXPORT IdentityParameterization : public LocalParameterization
+{
+public:
+    explicit IdentityParameterization(int size);
+    virtual ~IdentityParameterization()
+    {
+    }
+    bool Plus(const double* x, const double* delta, double* x_plus_delta) const override;
+    bool ComputeJacobian(const double* x, double* jacobian) const override;
+    bool MultiplyByJacobian(const double* x, const int num_cols, const double* global_matrix,
+                            double* local_matrix) const override;
+    int  GlobalSize() const override
+    {
+        return size_;
+    }
+    int LocalSize() const override
+    {
+        return size_;
+    }
 
- private:
-  const int size_;
+private:
+    const int size_;
 };
 
 // Hold a subset of the parameters inside a parameter block constant.
-class CERES_EXPORT SubsetParameterization : public LocalParameterization {
- public:
-  explicit SubsetParameterization(int size,
-                                  const std::vector<int>& constant_parameters);
-  virtual ~SubsetParameterization() {}
-  bool Plus(const double* x,
-            const double* delta,
-            double* x_plus_delta) const override;
-  bool ComputeJacobian(const double* x, double* jacobian) const override;
-  bool MultiplyByJacobian(const double* x,
-                          const int num_cols,
-                          const double* global_matrix,
-                          double* local_matrix) const override;
-  int GlobalSize() const override {
-    return static_cast<int>(constancy_mask_.size());
-  }
-  int LocalSize() const override { return local_size_; }
+class CERES_EXPORT SubsetParameterization : public LocalParameterization
+{
+public:
+    explicit SubsetParameterization(int size, const std::vector<int>& constant_parameters);
+    virtual ~SubsetParameterization()
+    {
+    }
+    bool Plus(const double* x, const double* delta, double* x_plus_delta) const override;
+    bool ComputeJacobian(const double* x, double* jacobian) const override;
+    bool MultiplyByJacobian(const double* x, const int num_cols, const double* global_matrix,
+                            double* local_matrix) const override;
+    int  GlobalSize() const override
+    {
+        return static_cast<int>(constancy_mask_.size());
+    }
+    int LocalSize() const override
+    {
+        return local_size_;
+    }
 
- private:
-  const int local_size_;
-  std::vector<char> constancy_mask_;
+private:
+    const int         local_size_;
+    std::vector<char> constancy_mask_;
 };
 
 // Plus(x, delta) = [cos(|delta|), sin(|delta|) delta / |delta|] * x
 // with * being the quaternion multiplication operator. Here we assume
 // that the first element of the quaternion vector is the real (cos
 // theta) part.
-class CERES_EXPORT QuaternionParameterization : public LocalParameterization {
- public:
-  virtual ~QuaternionParameterization() {}
-  bool Plus(const double* x,
-            const double* delta,
-            double* x_plus_delta) const override;
-  bool ComputeJacobian(const double* x, double* jacobian) const override;
-  int GlobalSize() const override { return 4; }
-  int LocalSize() const override { return 3; }
+class CERES_EXPORT QuaternionParameterization : public LocalParameterization
+{
+public:
+    virtual ~QuaternionParameterization()
+    {
+    }
+    bool Plus(const double* x, const double* delta, double* x_plus_delta) const override;
+    bool ComputeJacobian(const double* x, double* jacobian) const override;
+    int  GlobalSize() const override
+    {
+        return 4;
+    }
+    int LocalSize() const override
+    {
+        return 3;
+    }
 };
 
 // Implements the quaternion local parameterization for Eigen's representation
@@ -221,16 +233,22 @@ class CERES_EXPORT QuaternionParameterization : public LocalParameterization {
 //
 // Plus(x, delta) = [sin(|delta|) delta / |delta|, cos(|delta|)] * x
 // with * being the quaternion multiplication operator.
-class CERES_EXPORT EigenQuaternionParameterization
-    : public ceres::LocalParameterization {
- public:
-  virtual ~EigenQuaternionParameterization() {}
-  bool Plus(const double* x,
-            const double* delta,
-            double* x_plus_delta) const override;
-  bool ComputeJacobian(const double* x, double* jacobian) const override;
-  int GlobalSize() const override { return 4; }
-  int LocalSize() const override { return 3; }
+class CERES_EXPORT EigenQuaternionParameterization : public ceres::LocalParameterization
+{
+public:
+    virtual ~EigenQuaternionParameterization()
+    {
+    }
+    bool Plus(const double* x, const double* delta, double* x_plus_delta) const override;
+    bool ComputeJacobian(const double* x, double* jacobian) const override;
+    int  GlobalSize() const override
+    {
+        return 4;
+    }
+    int LocalSize() const override
+    {
+        return 3;
+    }
 };
 
 // This provides a parameterization for homogeneous vectors which are commonly
@@ -246,20 +264,26 @@ class CERES_EXPORT EigenQuaternionParameterization
 // remain on the sphere. We assume that the last element of x is the scalar
 // component. The size of the homogeneous vector is required to be greater than
 // 1.
-class CERES_EXPORT HomogeneousVectorParameterization
-    : public LocalParameterization {
- public:
-  explicit HomogeneousVectorParameterization(int size);
-  virtual ~HomogeneousVectorParameterization() {}
-  bool Plus(const double* x,
-            const double* delta,
-            double* x_plus_delta) const override;
-  bool ComputeJacobian(const double* x, double* jacobian) const override;
-  int GlobalSize() const override { return size_; }
-  int LocalSize() const override { return size_ - 1; }
+class CERES_EXPORT HomogeneousVectorParameterization : public LocalParameterization
+{
+public:
+    explicit HomogeneousVectorParameterization(int size);
+    virtual ~HomogeneousVectorParameterization()
+    {
+    }
+    bool Plus(const double* x, const double* delta, double* x_plus_delta) const override;
+    bool ComputeJacobian(const double* x, double* jacobian) const override;
+    int  GlobalSize() const override
+    {
+        return size_;
+    }
+    int LocalSize() const override
+    {
+        return size_ - 1;
+    }
 
- private:
-  const int size_;
+private:
+    const int size_;
 };
 
 // This provides a parameterization for lines, where the line is
@@ -276,17 +300,21 @@ class CERES_EXPORT HomogeneousVectorParameterization
 // manifold (see https://en.wikipedia.org/wiki/Affine_Grassmannian_(manifold))
 // for the case Graff_1(R^n).
 template <int AmbientSpaceDimension>
-class LineParameterization : public LocalParameterization {
- public:
-  static_assert(AmbientSpaceDimension >= 2,
-                "The ambient space must be at least 2");
+class LineParameterization : public LocalParameterization
+{
+public:
+    static_assert(AmbientSpaceDimension >= 2, "The ambient space must be at least 2");
 
-  bool Plus(const double* x,
-            const double* delta,
-            double* x_plus_delta) const override;
-  bool ComputeJacobian(const double* x, double* jacobian) const override;
-  int GlobalSize() const override { return 2 * AmbientSpaceDimension; }
-  int LocalSize() const override { return 2 * (AmbientSpaceDimension - 1); }
+    bool Plus(const double* x, const double* delta, double* x_plus_delta) const override;
+    bool ComputeJacobian(const double* x, double* jacobian) const override;
+    int  GlobalSize() const override
+    {
+        return 2 * AmbientSpaceDimension;
+    }
+    int LocalSize() const override
+    {
+        return 2 * (AmbientSpaceDimension - 1);
+    }
 };
 
 // Construct a local parameterization by taking the Cartesian product
@@ -302,56 +330,59 @@ class LineParameterization : public LocalParameterization {
 //
 // is the local parameterization for a rigid transformation, where the
 // rotation is represented using a quaternion.
-class CERES_EXPORT ProductParameterization : public LocalParameterization {
- public:
-  ProductParameterization(const ProductParameterization&) = delete;
-  ProductParameterization& operator=(const ProductParameterization&) = delete;
-  virtual ~ProductParameterization() {}
-  //
-  // NOTE: The constructor takes ownership of the input local
-  // parameterizations.
-  //
-  template <typename... LocalParams>
-  ProductParameterization(LocalParams*... local_params)
-      : local_params_(sizeof...(LocalParams)),
-        local_size_{0},
-        global_size_{0},
-        buffer_size_{0} {
-    constexpr int kNumLocalParams = sizeof...(LocalParams);
-    static_assert(kNumLocalParams >= 2,
-                  "At least two local parameterizations must be specified.");
-
-    using LocalParameterizationPtr = std::unique_ptr<LocalParameterization>;
-
-    // Wrap all raw pointers into std::unique_ptr for exception safety.
-    std::array<LocalParameterizationPtr, kNumLocalParams> local_params_array{
-        LocalParameterizationPtr(local_params)...};
-
-    // Initialize internal state.
-    for (int i = 0; i < kNumLocalParams; ++i) {
-      LocalParameterizationPtr& param = local_params_[i];
-      param = std::move(local_params_array[i]);
-
-      buffer_size_ =
-          std::max(buffer_size_, param->LocalSize() * param->GlobalSize());
-      global_size_ += param->GlobalSize();
-      local_size_ += param->LocalSize();
+class CERES_EXPORT ProductParameterization : public LocalParameterization
+{
+public:
+    ProductParameterization(const ProductParameterization&)            = delete;
+    ProductParameterization& operator=(const ProductParameterization&) = delete;
+    virtual ~ProductParameterization()
+    {
     }
-  }
+    //
+    // NOTE: The constructor takes ownership of the input local
+    // parameterizations.
+    //
+    template <typename... LocalParams>
+    ProductParameterization(LocalParams*... local_params)
+      : local_params_(sizeof...(LocalParams)), local_size_{0}, global_size_{0}, buffer_size_{0}
+    {
+        constexpr int kNumLocalParams = sizeof...(LocalParams);
+        static_assert(kNumLocalParams >= 2, "At least two local parameterizations must be specified.");
 
-  bool Plus(const double* x,
-            const double* delta,
-            double* x_plus_delta) const override;
-  bool ComputeJacobian(const double* x,
-                       double* jacobian) const override;
-  int GlobalSize() const override { return global_size_; }
-  int LocalSize() const override { return local_size_; }
+        using LocalParameterizationPtr = std::unique_ptr<LocalParameterization>;
 
- private:
-  std::vector<std::unique_ptr<LocalParameterization>> local_params_;
-  int local_size_;
-  int global_size_;
-  int buffer_size_;
+        // Wrap all raw pointers into std::unique_ptr for exception safety.
+        std::array<LocalParameterizationPtr, kNumLocalParams> local_params_array{
+            LocalParameterizationPtr(local_params)...};
+
+        // Initialize internal state.
+        for (int i = 0; i < kNumLocalParams; ++i)
+        {
+            LocalParameterizationPtr& param = local_params_[i];
+            param                           = std::move(local_params_array[i]);
+
+            buffer_size_ = std::max(buffer_size_, param->LocalSize() * param->GlobalSize());
+            global_size_ += param->GlobalSize();
+            local_size_ += param->LocalSize();
+        }
+    }
+
+    bool Plus(const double* x, const double* delta, double* x_plus_delta) const override;
+    bool ComputeJacobian(const double* x, double* jacobian) const override;
+    int  GlobalSize() const override
+    {
+        return global_size_;
+    }
+    int LocalSize() const override
+    {
+        return local_size_;
+    }
+
+private:
+    std::vector<std::unique_ptr<LocalParameterization>> local_params_;
+    int                                                 local_size_;
+    int                                                 global_size_;
+    int                                                 buffer_size_;
 };
 
 }  // namespace ceres
