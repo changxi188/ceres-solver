@@ -61,6 +61,8 @@ endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON CACHE BOOL "")
 mark_as_advanced(CMAKE_CXX_STANDARD_REQUIRED)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # MSVC versions < 2015 did not fully support >= C++14, and technically even
 # 2015 did not support a couple of smaller features
 if (CMAKE_CXX_COMPILER_ID MATCHES MSVC AND
